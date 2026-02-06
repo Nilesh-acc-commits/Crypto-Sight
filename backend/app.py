@@ -270,16 +270,17 @@ def get_news(coin: str):
     return {"coin": coin, "news": news_items, "source": "api"}
 
 # --- Static File Serving (SPA Support) ---
+# Disabled for development mode - frontend runs on separate Vite server
 
 # Mount the static directory (the built React app)
-app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+# app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
 
 # Catch-all route to serve index.html for any path not matched by API
-@app.get("/{full_path:path}")
-async def serve_react_app(full_path: str):
-    file_path = f"static/{full_path}"
-    # If the file exists (e.g., favicon.ico), serve it
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        return FileResponse(file_path)
-    # Otherwise, return index.html for client-side routing
-    return FileResponse("static/index.html")
+# @app.get("/{full_path:path}")
+# async def serve_react_app(full_path: str):
+#     file_path = f"static/{full_path}"
+#     # If the file exists (e.g., favicon.ico), serve it
+#     if os.path.exists(file_path) and os.path.isfile(file_path):
+#         return FileResponse(file_path)
+#     # Otherwise, return index.html for client-side routing
+#     return FileResponse("static/index.html")

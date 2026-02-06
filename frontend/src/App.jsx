@@ -1,26 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
-import Calculator from './pages/Calculator';
-import Compare from './pages/Compare';
-import Profile from './pages/Profile';
-import Loader from './components/Loader';
-// import VantaBackground from './components/VantaBackground'; // Disabled for thermal performance
-import { AnimatePresence } from 'framer-motion';
-
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
+import PredictionPage from './pages/PredictionPage';
 
 function App() {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
-  const [showLanding, setShowLanding] = useState(true);
+  const [currentView, setCurrentView] = useState('prediction');
 
-  // Temporary: Expose setUser for demo automation (Retry)
-  useEffect(() => {
-    window.demoLogin = (userData) => setUser(userData);
-  }, []);
+  // Mock user for hackathon demo - no authentication needed
+  const user = {
+    email: 'demo@cryptosight.ai',
+    name: 'Demo User'
+  };
 
   return (
     <div
@@ -28,35 +17,13 @@ function App() {
     >
       <div className="fixed inset-0 w-full h-full bg-grid-overlay pointer-events-none z-0"></div>
 
-      <AnimatePresence>
-        {loading && <Loader setLoading={setLoading} />}
-      </AnimatePresence>
-
-      {!loading && showLanding && (
-        <LandingPage onGetStarted={() => setShowLanding(false)} />
-      )}
-
-      {!loading && !showLanding && !user && (
-        <LoginPage onLoginSuccess={(response) => setUser(response)} />
-      )}
-
-      {!loading && !showLanding && user && (
-        <>
-          <Navbar
-            currentView={currentView}
-            onNavigate={setCurrentView}
-            onLogout={() => {
-              setUser(null);
-              setShowLanding(true); // Return to landing on logout
-            }}
-            user={user}
-          />
-          {currentView === 'dashboard' && <Dashboard user={user} />}
-          {currentView === 'calculator' && <Calculator user={user} />}
-          {currentView === 'compare' && <Compare user={user} />}
-          {currentView === 'profile' && <Profile user={user} />}
-        </>
-      )}
+      <Navbar
+        currentView={currentView}
+        onNavigate={setCurrentView}
+        onLogout={() => window.location.reload()}
+        user={user}
+      />
+      <PredictionPage user={user} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
-# OmniCast 
+# CryptoSight 
 ## AI-Driven Cryptocurrency Forecasting Platform
 
-OmniCast is a cutting-edge cryptocurrency forecasting application that leverages machine learning to predict price trends for major cryptocurrencies. By combining real-time market data with advanced regression models, OmniCast provides users with actionable insights through an immersive, interactive dashboard.
+CryptoSight is a cutting-edge cryptocurrency forecasting application that leverages machine learning to predict price trends for major cryptocurrencies. By combining real-time market data with advanced regression models, CryptoSight provides users with actionable insights through an immersive, interactive dashboard.
 
 ---
 
@@ -37,7 +37,7 @@ OmniCast is a cutting-edge cryptocurrency forecasting application that leverages
 ## 📂 Project Structure
 
 ```bash
-OmniCast/
+CryptoSight/
 ├── backend/                # FastAPI Server & ML Logic
 │   ├── app.py              # Main API entry point and endpoints
 │   ├── predictor.py        # ML Inference Engine & Feature Engineering
