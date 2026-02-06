@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Shield, ShieldCheck, Clock, Activity, Calculator, ArrowRightLeft } from 'lucide-react';
-import axios from 'axios';
+import { db } from '../firebase-config';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 
 const Profile = ({ user }) => {
     const [history, setHistory] = useState([]);
@@ -9,12 +10,21 @@ const Profile = ({ user }) => {
 
     useEffect(() => {
         const fetchHistory = async () => {
-            if (!user?.email) return;
+            if (!user?.uid) return;
             try {
-                const res = await axios.get(`/history/${user.email}`);
-                setHistory(res.data.history);
+                const historyRef = collection(db, "users", user.uid, "history");
+                const q = query(historyRef, orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                const historyData = querySnapshot.docs.map(doc => ({
+                    ...doc.data(),
+                    // Convert Firestore timestamp to seconds for compatibility with existing format
+                    timestamp: doc.data().timestamp?.seconds || Date.now() / 1000
+                }));
+
+                setHistory(historyData);
             } catch (err) {
-                console.error("Failed to fetch history", err);
+                console.error("Failed to fetch history from Firestore", err);
             } finally {
                 setLoading(false);
             }

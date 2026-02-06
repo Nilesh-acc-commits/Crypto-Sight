@@ -9,7 +9,7 @@ load_dotenv()
 API_KEY = os.getenv("BINANCE_API_KEY") # Optional for public data
 BASE_URL = "https://api.binance.com"
 
-# Scripts are in OmniCast/scripts/, Data is in OmniCast/data/
+# Scripts are in Crypto-Sight/scripts/, Data is in Crypto-Sight/data/
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 

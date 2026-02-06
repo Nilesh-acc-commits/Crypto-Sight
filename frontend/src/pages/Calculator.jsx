@@ -63,116 +63,126 @@ const Calculator = ({ user }) => {
 
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-4xl mx-auto px-6 py-10"
-        >
-            <h1 className="text-4xl font-bold text-white mb-2">Future Wealth Calculator 💸</h1>
-            <p className="text-slate-400 mb-12">See how your investment grows with AI-predicted market moves.</p>
+        <div className="min-h-screen bg-[#0B0F19] relative overflow-hidden">
+            {/* Background Effects */}
+            <div className="fixed inset-0 w-full h-full bg-grid-overlay pointer-events-none z-0"></div>
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-[100px] animate-pulse pointer-events-none"></div>
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px] animate-pulse delay-1000 pointer-events-none"></div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* Controls */}
-                <div className="space-y-8">
-                    <motion.div
-                        whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.2)" }}
-                        whileTap={{ scale: 0.98 }}
-                        className="glass-panel p-6 rounded-2xl border border-white/5 transition-colors"
-                    >
-                        <label className="block text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Select Asset</label>
-                        <CoinSelector selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
-                    </motion.div>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-4xl mx-auto px-6 py-10 relative z-10"
+            >
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 tracking-tighter leading-tight font-display overflow-visible">
+                    <span className="metallic-text inline-block overflow-visible pr-2">Wealth</span>
+                    <span className="neon-text inline-block overflow-visible text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">Calculator</span>
+                </h1>
+                <p className="text-slate-400 mb-12 text-lg">See how your investment grows with AI-predicted market moves.</p>
 
-                    <motion.div
-                        whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.2)" }}
-                        className="glass-panel p-6 rounded-2xl border border-white/5 transition-colors"
-                    >
-                        <label className="block text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Investment Amount (INR)</label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                            <input
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(Number(e.target.value))}
-                                className="w-full bg-white/10 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-2xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all placeholder-slate-400 hover:bg-white/20"
-                            />
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.2)" }}
-                        className="glass-panel p-6 rounded-2xl border border-white/5 transition-colors"
-                    >
-                        <label className="block text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Duration: {days} Days</label>
-                        <input
-                            type="range"
-                            min="1"
-                            max="7"
-                            value={days}
-                            onChange={(e) => setDays(Number(e.target.value))}
-                            className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-400 hover:accent-cyan-300 transition-all"
-                        />
-                        <div className="flex justify-between text-xs text-slate-500 mt-2">
-                            <span>1 Day</span>
-                            <span>1 Week</span>
-                        </div>
-                    </motion.div>
-                </div>
-
-                {/* Result Card */}
-                <div className="relative">
-                    <div className={`absolute inset-0 bg-gradient-to-br ${isProfit ? 'from-teal-400 to-emerald-500' : 'from-red-400 to-orange-500'} rounded-[2.5rem] blur-xl opacity-20 animate-pulse`} />
-                    <motion.div
-                        key={result.finalValue} // Trigger animation on value change
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                        className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] shadow-2xl h-full flex flex-col justify-center items-center text-center overflow-hidden"
-                    >
-                        {/* Background flash effect */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    {/* Controls */}
+                    <div className="space-y-8">
                         <motion.div
-                            key={`flash-${result.finalValue}`}
-                            initial={{ opacity: 0.5 }}
-                            animate={{ opacity: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className={`absolute inset-0 ${isProfit ? 'bg-green-500' : 'bg-red-500'}`}
-                        />
+                            whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.2)" }}
+                            whileTap={{ scale: 0.98 }}
+                            className="glass-panel p-6 rounded-2xl border border-white/5 transition-colors"
+                        >
+                            <label className="block text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Select Asset</label>
+                            <CoinSelector selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+                        </motion.div>
 
-                        {loading ? (
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mb-4"></div>
-                        ) : (
-                            <>
-                                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 z-10 ${isProfit ? 'bg-teal-500/20 text-teal-400 shadow-[0_0_15px_rgba(45,212,191,0.3)]' : 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(248,113,113,0.3)]'}`}>
-                                    <span className="text-2xl font-bold">₹</span>
-                                </div>
+                        <motion.div
+                            whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.2)" }}
+                            className="glass-panel p-6 rounded-2xl border border-white/5 transition-colors"
+                        >
+                            <label className="block text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Investment Amount (INR)</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                <input
+                                    type="number"
+                                    value={amount}
+                                    onChange={(e) => setAmount(Number(e.target.value))}
+                                    className="w-full bg-white/10 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-2xl font-bold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all placeholder-slate-400 hover:bg-white/20"
+                                />
+                            </div>
+                        </motion.div>
 
-                                <h3 className="text-slate-400 font-medium text-lg mb-2 z-10">Projected Value</h3>
+                        <motion.div
+                            whileHover={{ scale: 1.02, borderColor: "rgba(255, 255, 255, 0.2)" }}
+                            className="glass-panel p-6 rounded-2xl border border-white/5 transition-colors"
+                        >
+                            <label className="block text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Duration: {days} Days</label>
+                            <input
+                                type="range"
+                                min="1"
+                                max="7"
+                                value={days}
+                                onChange={(e) => setDays(Number(e.target.value))}
+                                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-400 hover:accent-cyan-300 transition-all"
+                            />
+                            <div className="flex justify-between text-xs text-slate-500 mt-2">
+                                <span>1 Day</span>
+                                <span>1 Week</span>
+                            </div>
+                        </motion.div>
+                    </div>
 
-                                {/* Animated Count Up using layout animation */}
-                                <motion.div
-                                    className="text-6xl font-bold text-white mb-4 tracking-tight z-10"
-                                >
-                                    ₹{result.finalValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                </motion.div>
+                    {/* Result Card */}
+                    <div className="relative">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${isProfit ? 'from-teal-400 to-emerald-500' : 'from-red-400 to-orange-500'} rounded-[2.5rem] blur-xl opacity-20 animate-pulse`} />
+                        <motion.div
+                            key={result.finalValue} // Trigger animation on value change
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                            className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[2.5rem] shadow-2xl h-full flex flex-col justify-center items-center text-center overflow-hidden"
+                        >
+                            {/* Background flash effect */}
+                            <motion.div
+                                key={`flash-${result.finalValue}`}
+                                initial={{ opacity: 0.5 }}
+                                animate={{ opacity: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className={`absolute inset-0 ${isProfit ? 'bg-green-500' : 'bg-red-500'}`}
+                            />
 
-                                <motion.div
-                                    initial={{ y: 20, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.2 }}
-                                    className={`text-xl font-bold ${isProfit ? 'text-green-400 border-green-500/30' : 'text-red-400 border-red-500/30'} bg-white/5 px-4 py-2 rounded-full shadow-sm border z-10`}
-                                >
-                                    {isProfit ? '+' : ''}{result.profit.toLocaleString(undefined, { maximumFractionDigits: 2 })} ({result.percent.toFixed(2)}%)
-                                </motion.div>
+                            {loading ? (
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mb-4"></div>
+                            ) : (
+                                <>
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 z-10 ${isProfit ? 'bg-teal-500/20 text-teal-400 shadow-[0_0_15px_rgba(45,212,191,0.3)]' : 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(248,113,113,0.3)]'}`}>
+                                        <span className="text-2xl font-bold">₹</span>
+                                    </div>
 
-                                <p className="text-slate-500 text-sm mt-8 max-w-xs z-10">
-                                    Based on AI analysis of recent {selectedCoin} trends for the next {days * 24} hours. Past performance is not indicative of future results.
-                                </p>
-                            </>
-                        )}
-                    </motion.div>
+                                    <h3 className="text-slate-400 font-medium text-lg mb-2 z-10">Projected Value</h3>
+
+                                    {/* Animated Count Up using layout animation */}
+                                    <motion.div
+                                        className="text-6xl font-bold text-white mb-4 tracking-tight z-10"
+                                    >
+                                        ₹{result.finalValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                    </motion.div>
+
+                                    <motion.div
+                                        initial={{ y: 20, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        transition={{ delay: 0.2 }}
+                                        className={`text-xl font-bold ${isProfit ? 'text-green-400 border-green-500/30' : 'text-red-400 border-red-500/30'} bg-white/5 px-4 py-2 rounded-full shadow-sm border z-10`}
+                                    >
+                                        {isProfit ? '+' : ''}{result.profit.toLocaleString(undefined, { maximumFractionDigits: 2 })} ({result.percent.toFixed(2)}%)
+                                    </motion.div>
+
+                                    <p className="text-slate-500 text-sm mt-8 max-w-xs z-10">
+                                        Based on AI analysis of recent {selectedCoin} trends for the next {days * 24} hours. Past performance is not indicative of future results.
+                                    </p>
+                                </>
+                            )}
+                        </motion.div>
+                    </div>
                 </div>
-            </div>
-        </motion.div>
+            </motion.div>
+        </div>
     );
 };
 

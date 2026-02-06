@@ -7,7 +7,7 @@ import seaborn as sns
 from datetime import timedelta
 
 # --- Configuration ---
-# Scripts are in OmniCast/scripts/, Data in OmniCast/data/, Models in OmniCast/models/
+# Scripts are in Crypto-Sight/scripts/, Data in Crypto-Sight/data/, Models in Crypto-Sight/models/
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 MODELS_DIR = os.path.join(BASE_DIR, 'models')

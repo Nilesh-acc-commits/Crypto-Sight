@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CLOUDS from 'vanta/dist/vanta.clouds.min';
-import * as THREE from 'three';
 
 const systemLogs = [
     "INITIALIZING_NEURAL_NET...",
@@ -15,43 +13,152 @@ const systemLogs = [
 const Loader = ({ setLoading }) => {
     const [logIndex, setLogIndex] = useState(0);
     const vantaRef = useRef(null);
-    const [vantaEffect, setVantaEffect] = useState(null);
 
     useEffect(() => {
-        if (!vantaEffect && vantaRef.current) {
-            /* Vanta Disabled for performance
-            setVantaEffect(CLOUDS({
-                el: vantaRef.current,
-                THREE: THREE,
-                mouseControls: false,
-                touchControls: false,
-                gyroControls: false,
-                minHeight: 200.00,
-                minWidth: 200.00,
-                skyColor: 0x0b0f19, // Deep Navy base
-                cloudColor: 0x2a3b55, // Matches our accented panels
-                cloudShadowColor: 0x001220,
-                sunColor: 0x00e5ff, // Cyan glow
-                sunGlareColor: 0x7c3aed, // Purple glare
-                sunlightColor: 0x00e5ff,
-                speed: 1.0
-            }));
-            */
+        // Interactive Matrix/Network effect with Canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (vantaRef.current) {
+            vantaRef.current.innerHTML = '';
+            vantaRef.current.appendChild(canvas);
         }
-        return () => {
-            if (vantaEffect) vantaEffect.destroy();
+
+        let width, height;
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 150 };
+
+        const handleMouseMove = (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
         };
-    }, [vantaEffect]);
+
+        const resize = () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        };
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 3 + 1;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
+                this.color = Math.random() > 0.5 ? '#00E5FF' : '#7C3AED';
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+            }
+            update() {
+                // Mouse Interaction Physics
+                if (mouse.x) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let maxDistance = mouse.radius;
+                    let force = (maxDistance - distance) / maxDistance;
+                    let directionX = forceDirectionX * force * this.density;
+                    let directionY = forceDirectionY * force * this.density;
+
+                    if (distance < mouse.radius) {
+                        this.x -= directionX;
+                        this.y -= directionY;
+                    } else {
+                        this.x += this.speedX;
+                        this.y += this.speedY;
+                    }
+                } else {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                }
+
+                // Boundary check
+                if (this.x > width) this.x = width;
+                if (this.x < 0) this.x = 0;
+                if (this.y > height) this.y = height;
+                if (this.y < 0) this.y = 0;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const initParticles = () => {
+            particles = [];
+            for (let i = 0; i < 100; i++) particles.push(new Particle());
+        };
+
+        const animate = () => {
+            if (!vantaRef.current) return;
+            ctx.clearRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+
+                // Draw connections if close
+                particles.forEach(p2 => {
+                    let dx = p.x - p2.x;
+                    let dy = p.y - p2.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 100) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = p.color;
+                        ctx.lineWidth = 0.2;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                });
+
+                // Connect to mouse
+                if (mouse.x) {
+                    let dx = p.x - mouse.x;
+                    let dy = p.y - mouse.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 150) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = p.color;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        };
+
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        initParticles();
+        animate();
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', handleMouseMove);
+
+        return () => {
+            window.removeEventListener('resize', resize);
+            window.removeEventListener('mousemove', handleMouseMove);
+            if (canvas.remove) canvas.remove();
+        };
+    }, []);
 
     useEffect(() => {
         // Log sequencing
         if (logIndex < systemLogs.length - 1) {
             const timeout = setTimeout(() => {
                 setLogIndex(prev => prev + 1);
-            }, 800); // Speed of logs
+            }, 800);
             return () => clearTimeout(timeout);
         } else {
-            // Final delay before entry
             const finalTimeout = setTimeout(() => {
                 setLoading(false);
             }, 1000);
@@ -61,7 +168,8 @@ const Loader = ({ setLoading }) => {
 
     return (
         <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B0F19] overflow-hidden font-mono"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B0F19] overflow-hidden font-mono cursor-pointer"
+            onClick={() => setLoading(false)} // Skip on click
             exit={{
                 opacity: 0,
                 scale: 1.1,
@@ -69,7 +177,7 @@ const Loader = ({ setLoading }) => {
                 transition: { duration: 0.8, ease: "easeInOut" }
             }}
         >
-            {/* Vanta Cloud Background - Absolute & Behind Text */}
+            {/* Background Container for Canvas */}
             <div ref={vantaRef} className="absolute inset-0 z-0 opacity-40"></div>
 
             {/* Overlay Gradients */}
@@ -105,7 +213,7 @@ const Loader = ({ setLoading }) => {
                         transition={{ duration: 1.5, ease: "easeOut" }}
                         className="text-3xl font-bold text-white metallic-text"
                     >
-                        OMNI CAST
+                        CRYPTO SIGHT
                     </motion.h1>
                     <motion.div
                         initial={{ width: 0 }}
@@ -141,9 +249,13 @@ const Loader = ({ setLoading }) => {
                     />
                 </div>
 
+                <p className="mt-4 text-[10px] text-slate-500 animate-pulse">
+                    [ Click anywhere to initialize instantly ]
+                </p>
+
                 {/* Footer ID */}
                 <div className="absolute bottom-10 text-[10px] text-slate-600 tracking-[0.2em]">
-                    SYSTEM_ID: OMNI_V3.0
+                    SYSTEM_ID: CRYPTO_SIGHT_V3.0
                 </div>
             </div>
         </motion.div>

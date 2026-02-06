@@ -56,149 +56,9 @@ def predict_latest_price(coin: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- Google Authentication ---
-from pydantic import BaseModel
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
-from passlib.context import CryptContext
-
-# Security & Hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-class GoogleAuthRequest(BaseModel):
-    token: str
-
-class UserAuth(BaseModel):
-    email: str
-    password: str
-
-GOOGLE_CLIENT_ID = "164298787471-uebhak22t9liak0sjcdkep1dc0dno27p.apps.googleusercontent.com" # User must replace this!
-
-# In-Memory Database for Models (Simple Demo)
-# Format: { "email": { "password": "hashed_password", "type": "email" } }
-fake_users_db = {}
-
-@app.post("/auth/signup")
-def signup(user: UserAuth):
-    if user.email in fake_users_db:
-        raise HTTPException(status_code=400, detail="User already exists")
-    
-    hashed_password = pwd_context.hash(user.password)
-    fake_users_db[user.email] = {
-        "password": hashed_password,
-        "type": "email",
-        "name": user.email.split("@")[0]
-    }
-    return {
-        "message": "User created successfully",
-        "user": {
-            "email": user.email,
-            "name": fake_users_db[user.email]["name"]
-        }
-    }
-
-@app.post("/auth/login")
-def login(user: UserAuth):
-    db_user = fake_users_db.get(user.email)
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-    
-    if db_user.get("type") == "google":
-         raise HTTPException(status_code=400, detail="Please sign in with Google")
-
-    if not pwd_context.verify(user.password, db_user["password"]):
-         raise HTTPException(status_code=400, detail="Invalid credentials")
-         
-    return {
-        "message": "Login successful", 
-        "user": {
-            "email": user.email,
-            "name": db_user["name"]
-        }
-    }
-
-@app.post("/auth/google")
-def google_login(auth: GoogleAuthRequest):
-    try:
-        # Verify the token with Google
-        idinfo = id_token.verify_oauth2_token(
-            auth.token, 
-            google_requests.Request(), 
-            GOOGLE_CLIENT_ID
-        )
-        
-        # ID token is valid. Get the user's Google Account ID from the decoded token.
-        userid = idinfo['sub']
-        email = idinfo['email']
-        name = idinfo.get('name', 'User')
-        
-        # Create user if not exists
-        if email not in fake_users_db:
-             fake_users_db[email] = { "type": "google", "name": name }
-        
-        # In a real app, you would check if the user exists in your DB here, 
-        # create a session, and return your own JWT token.
-        # For now, we return success and the user profile.
-        
-        return {
-            "message": "Login successful",
-            "user": {
-                "email": email,
-                "name": name,
-                "picture": idinfo.get('picture')
-            }
-        }
-        
-    except ValueError:
-        # Invalid token
-        raise HTTPException(status_code=401, detail="Invalid Google Token")
-    except Exception as e:
-        # Note: If CLIENT_ID is wrong, it might throw an error here too
-        print(f"Auth Error: {e}") 
-        # If the user hasn't set the ID yet, we might want to bypass for demo purposes
-        # Notes:
-        # - If "Audience" error occurs, it means the token was issued for a different Client ID.
-        # - Make sure the Frontend and Backend use the EXACT SAME Client ID.
-             
-        raise HTTPException(status_code=401, detail=f"Authentication Failed: {str(e)}")
-
-# -----------------------------
-# User History Implementation
-# -----------------------------
-
-class HistoryItem(BaseModel):
-    email: str
-    type: str  # 'prediction', 'calculation', 'compare'
-    details: dict
-    timestamp: float
-
-@app.post("/history/add")
-def add_history(item: HistoryItem):
-    if item.email not in fake_users_db:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user_record = fake_users_db[item.email]
-    if "history" not in user_record:
-        user_record["history"] = []
-    
-    # Prepend to keep newest first (simple in-memory approach)
-    user_record["history"].insert(0, item.dict())
-    
-    # Optional: Limit history size
-    if len(user_record["history"]) > 50:
-        user_record["history"] = user_record["history"][:50]
-        
-    return {"status": "success", "message": "History added"}
-
-@app.get("/history/{email}")
-def get_history(email: str):
-    if email not in fake_users_db:
-         # For demo, if user doesn't exist in DB (e.g. restart), return empty or error.
-         # Returning empty to be safe if frontend has cached user state.
-         return {"history": []}
-         
-    user_record = fake_users_db[email]
-    return {"history": user_record.get("history", [])}
+# --- Legacy Auth & History Removed (Migrated to Firebase) ---
+# The frontend now handles Authentication (Firebase Auth) and History (Firebase Firestore) directly.
+# This backend is now dedicated to ML Predictions and Data Processing.
 
 # -----------------------------
 
@@ -218,6 +78,48 @@ def predict_forecast(coin: str, steps: int = 24):
 # Simple in-memory cache for news
 NEWS_CACHE = {}
 CACHE_TTL = 600  # 10 minutes
+
+def analyze_sentiment(text):
+    """
+    Simple heuristic-based sentiment analysis for crypto news.
+    Returns: (sentiment: str, score: int)
+    """
+    text = text.lower()
+    
+    bullish_keywords = [
+        "surge", "jump", "rally", "record", "high", "all-time high", "ath", 
+        "adoption", "etf", "approve", "approval", "buy", "support", "bull", 
+        "bullish", "gain", "success", "launch", "partnership", "upgrade", 
+        "soar", "rocket", "breakout", "accumulate"
+    ]
+    
+    bearish_keywords = [
+        "crash", "drop", "fall", "dump", "ban", "regulation", "lawsuit", 
+        "sue", "hack", "scam", "bear", "bearish", "loss", "fail", "delay", 
+        "reject", "warning", "risk", "critical", "plunge", "collapse", 
+        "correction", "investigation"
+    ]
+    
+    score = 50  # Neutral base
+    sentiment = "Neutral"
+    
+    # Calculate score adjustments
+    bullish_count = sum(1 for word in bullish_keywords if word in text)
+    bearish_count = sum(1 for word in bearish_keywords if word in text)
+    
+    if bullish_count > bearish_count:
+        sentiment = "Bullish"
+        score = min(95, 60 + (bullish_count * 10))
+    elif bearish_count > bullish_count:
+        sentiment = "Bearish"
+        score = max(15, 40 - (bearish_count * 10))
+    
+    # Determine strength based on keywords
+    if "record" in text or "crash" in text or "hack" in text or "etf" in text:
+        if sentiment == "Bullish": score = min(98, score + 10)
+        elif sentiment == "Bearish": score = max(10, score - 10)
+
+    return sentiment, score
 
 @app.get("/news/{coin}")
 def get_news(coin: str):
@@ -248,7 +150,8 @@ def get_news(coin: str):
                         "url": item.get('url'),
                         "image_url": item.get('imageurl'),
                         "source": item.get('source_info', {}).get('name'),
-                        "published_on": item.get('published_on')
+                        "published_on": item.get('published_on'),
+                        "body": item.get('body', '')  # Get body for analysis
                     })
             return items
         except Exception as e:
@@ -265,22 +168,34 @@ def get_news(coin: str):
         
     # Update Cache
     if news_items:
+        # Perform Sentiment Analysis
+        for item in news_items:
+            # Analyze combined title and body for better context
+            full_text = f"{item['title']} {item.get('body', '')}"
+            sentiment, score = analyze_sentiment(full_text)
+            item['sentiment'] = sentiment
+            item['impact_score'] = score
+            
         NEWS_CACHE[coin] = (current_time, news_items)
         
     return {"coin": coin, "news": news_items, "source": "api"}
 
 # --- Static File Serving (SPA Support) ---
-# Disabled for development mode - frontend runs on separate Vite server
 
-# Mount the static directory (the built React app)
-# app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+# Only mount static files if the directory exists (for production deployment)
+if os.path.exists("static/assets"):
+    app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
 
-# Catch-all route to serve index.html for any path not matched by API
-# @app.get("/{full_path:path}")
-# async def serve_react_app(full_path: str):
-#     file_path = f"static/{full_path}"
-#     # If the file exists (e.g., favicon.ico), serve it
-#     if os.path.exists(file_path) and os.path.isfile(file_path):
-#         return FileResponse(file_path)
-#     # Otherwise, return index.html for client-side routing
-#     return FileResponse("static/index.html")
+    # Catch-all route to serve index.html for any path not matched by API
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        file_path = f"static/{full_path}"
+        # If the file exists (e.g., favicon.ico), serve it
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # Otherwise, return index.html for client-side routing
+        return FileResponse("static/index.html")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

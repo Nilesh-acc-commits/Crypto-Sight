@@ -1,60 +1,78 @@
 import React, { useState } from 'react';
-import { GoogleLogin } from '@react-oauth/google';
 import { motion } from 'framer-motion';
-import axios from 'axios'; // Ensure axios is imported
+// Firebase Imports
+import { auth, googleProvider, db } from '../firebase-config';
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 const LoginPage = ({ onLoginSuccess }) => {
     const [isLogin, setIsLogin] = useState(true);
-
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSuccess = async (credentialResponse) => {
-        console.log("Google Credential Received:", credentialResponse);
-        try {
-            // Send token to backend for verification
-            const res = await axios.post('/auth/google', {
-                token: credentialResponse.credential
+    // Sync user to Firestore on Login/Signup
+    const syncUserToFirestore = async (user) => {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            // Create new user profile
+            await setDoc(userRef, {
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName || user.email.split('@')[0],
+                photoURL: user.photoURL,
+                createdAt: new Date(),
+                plan: "free"
             });
-
-            console.log("Backend Verification Success:", res.data);
-            onLoginSuccess(res.data.user); // Pass backend user object
-
-        } catch (error) {
-            console.error("Backend Verification Failed:", error);
-            // Fallback or Alert User
-            alert(error.response?.data?.detail || "Authentication Failed with Backend");
         }
     };
 
-    const handleError = () => {
-        console.log('Login Failed');
+    const handleGoogleLogin = async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            await syncUserToFirestore(user);
+
+            // Standardize user object for App
+            onLoginSuccess({
+                email: user.email,
+                name: user.displayName || user.email.split('@')[0],
+                uid: user.uid,
+                photoURL: user.photoURL
+            });
+        } catch (error) {
+            console.error("Google Auth Error:", error);
+            alert(error.message);
+        }
     };
 
-    const handleEmailLogin = async (e) => {
+    const handleEmailAuth = async (e) => {
         e.preventDefault();
-        if (!email || !password) return;
-
+        setLoading(true);
         try {
-            const endpoint = isLogin ? '/auth/login' : '/auth/signup';
-            const res = await axios.post(endpoint, {
-                email: email,
-                password: password
+            let userCredential;
+            if (isLogin) {
+                userCredential = await signInWithEmailAndPassword(auth, email, password);
+            } else {
+                userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            }
+            const user = userCredential.user;
+            await syncUserToFirestore(user);
+
+            onLoginSuccess({
+                email: user.email,
+                name: user.displayName || user.email.split('@')[0],
+                uid: user.uid,
+                photoURL: user.photoURL
             });
 
-            console.log("Email Auth Success:", res.data);
-
-            if (isLogin) {
-                onLoginSuccess(res.data.user);
-            } else {
-                // After signup, automatically login or ask to login
-                alert("Account created! Please log in.");
-                setIsLogin(true); // Switch to login view
-                setPassword('');
-            }
         } catch (error) {
-            console.error("Email Auth Failed:", error);
-            alert(error.response?.data?.detail || "Authentication Failed");
+            console.error("Auth Error:", error);
+            alert(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -69,7 +87,7 @@ const LoginPage = ({ onLoginSuccess }) => {
             >
                 <div className="mb-6 text-center">
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-                        OmniCast
+                        Crypto Sight
                     </h1>
                     <h2 className="text-2xl font-semibold text-white mb-1">
                         {isLogin ? 'Welcome Back' : 'Create Account'}
@@ -79,19 +97,14 @@ const LoginPage = ({ onLoginSuccess }) => {
                     </p>
                 </div>
 
-                {/* Google Login */}
-                <div className="w-full flex justify-center mb-6">
-                    <div className="p-1 bg-white/5 rounded-full">
-                        <GoogleLogin
-                            onSuccess={handleSuccess}
-                            onError={handleError}
-                            theme="filled_black"
-                            shape="pill"
-                            size="large"
-                            text={isLogin ? "signin_with" : "signup_with"}
-                        />
-                    </div>
-                </div>
+                {/* Google Login Button (Custom UI triggering Firebase Popup) */}
+                <button
+                    onClick={handleGoogleLogin}
+                    className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 font-medium py-3 rounded-full hover:bg-slate-100 transition-all mb-6"
+                >
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                    {isLogin ? "Sign in with Google" : "Sign up with Google"}
+                </button>
 
                 {/* Divider */}
                 <div className="w-full flex items-center justify-between mb-6">
@@ -101,7 +114,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                 </div>
 
                 {/* Email Form */}
-                <form onSubmit={handleEmailLogin} className="w-full space-y-4">
+                <form onSubmit={handleEmailAuth} className="w-full space-y-4">
                     <div>
                         <input
                             type="email"
@@ -125,9 +138,10 @@ const LoginPage = ({ onLoginSuccess }) => {
 
                     <button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl shadow-lg transform transition-all active:scale-95"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl shadow-lg transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isLogin ? 'Log In' : 'Sign Up'}
+                        {loading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
                     </button>
                 </form>
 

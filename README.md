@@ -1,7 +1,7 @@
-# CryptoSight 
-## AI-Driven Cryptocurrency Forecasting Platform
+# Crypto Sight 
 
-CryptoSight is a cutting-edge cryptocurrency forecasting application that leverages machine learning to predict price trends for major cryptocurrencies. By combining real-time market data with advanced regression models, CryptoSight provides users with actionable insights through an immersive, interactive dashboard.
+## Overview
+Crypto Sight is a cutting-edge cryptocurrency forecasting application that leverages machine learning to predict price trends for major cryptocurrencies. By combining real-time market data with advanced regression models, Crypto Sight provides users with actionable insights through an immersive, interactive dashboard.
 
 ---
 
@@ -37,7 +37,7 @@ CryptoSight is a cutting-edge cryptocurrency forecasting application that levera
 ## 📂 Project Structure
 
 ```bash
-CryptoSight/
+Crypto-Sight/
 ├── backend/                # FastAPI Server & ML Logic
 │   ├── app.py              # Main API entry point and endpoints
 │   ├── predictor.py        # ML Inference Engine & Feature Engineering
